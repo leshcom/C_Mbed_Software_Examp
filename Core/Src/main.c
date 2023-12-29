@@ -21,6 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "MY_LIS3DSH.h"
 
 /* USER CODE END Includes */
 
@@ -40,67 +41,35 @@
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
-I2C_HandleTypeDef hi2c1;
-uint8_t Buff[2];
-uint16_t dataMedia[100] = {0};
-uint16_t dataSong[100] = {
-		0b00000000,
-		0b00010000,
-		0b00100000,
-		0b00110000,
-		0b01000000,
-		0b01010000,
-		0b01100000,
-		0b01110000,
-		0b10000000,
-		0b10010000,
-		0b10100000,
-		0b10110000,
-		0b11000000,
-		0b11010000,
-		0b11100000,
-		0b11110000,
-		0b11100000,
-		0b11110111,
-		0b00100000,
-		0b00110000,
-		0b00000000,
-		0b00000000,
-		0b00000000,
-		0b00001111,
-		0b00001111,
-		0b00001111,
-		0b00001000,
-		0b00001000,
-		0b00001000,
-		0b00001111,
-		0b00001111,
-		0b00001111,
-		0b00000000,
-		0b00000000
-
-
-
-};
-I2S_HandleTypeDef hi2s3;
-DMA_HandleTypeDef hdma_spi3_tx;
+SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
+LIS3DSH_DataScaled myData;
+LIS3DSH_DataScaled myDataprev;
 
+uint8_t drdyFlag=0;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_DMA_Init(void);
-static void MX_I2S3_Init(void);
-static void MX_I2C1_Init(void);
+static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+  /* Prevent unused argument(s) compilation warning */
+  UNUSED(GPIO_Pin);
+  /* NOTE: This function Should not be modified, when the callback is needed,
+           the HAL_GPIO_EXTI_Callback could be implemented in the user file
+   */
+
+  drdyFlag = 1;
+}
 
 /* USER CODE END 0 */
 
@@ -132,94 +101,81 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_DMA_Init();
-  MX_I2S3_Init();
-  MX_I2C1_Init();
+  MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
+  LIS3DSH_InitTypeDef myAccConfigDef;
+
+  myAccConfigDef.dataRate = LIS3DSH_DATARATE_25;
+  myAccConfigDef.fullScale = LIS3DSH_FULLSCALE_4;
+  myAccConfigDef.antiAliasingBW = LIS3DSH_FILTER_BW_50;
+  myAccConfigDef.enableAxes = LIS3DSH_XYZ_ENABLE;
+  myAccConfigDef.interruptEnable = true;
+  LIS3DSH_Init(&hspi1, &myAccConfigDef);
+
+  LIS3DSH_X_calibrate(-1000.0, 980.0);
+  LIS3DSH_Y_calibrate(-1020.0, 1040.0);
+  LIS3DSH_Z_calibrate(-920.0, 1040.0);
 
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-
-  HAL_Delay(100);
-
-  HAL_GPIO_WritePin(GPIOD,GPIO_PIN_4,1);
-
-  Buff[0] = 0x0D;
-   Buff[1] = 0x01;
-   HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x00;
-  Buff[1] = 0x99;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x47;
-  Buff[1] = 0x80;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x32;
-  Buff[1] = 0xFF;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x32;
-  Buff[1] = 0x7F;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x00;
-  Buff[1] = 0x00;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x04;
-  Buff[1] = 0b10101111;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x05;
-  Buff[1] = 0b10100001;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x06;
-  Buff[1] = 0b00000111;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x0d;
-  Buff[1] = 0x70;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x27;
-  Buff[1] = 0x00;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x0A;
-   Buff[1] = 0x00;
-   HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x1A;
-  Buff[1] = 0x0A;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x1B;
-  Buff[1] = 0x0A;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x1F;
-  Buff[1] = 0x0F;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  Buff[0] = 0x02;
-  Buff[1] = 0b10011110;
-  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-
-  Buff[0] = 0x1d;
-  Buff[1] = 0x00;
-  HAL_I2S_Transmit_DMA(&hi2s3, dataMedia,100);
-
   while (1)
   {
+	  if(drdyFlag == 1)
+	  {
+		  myData = LIS3DSH_GetDataScaled();
+		  drdyFlag = 0;
+	  }
+	  HAL_Delay(100);
+	  if((myData.z-myDataprev.z)>=5.0 &&(myData.x-myDataprev.x)>=0.5)
+	  {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
 
+	  }
+	  else if ((myData.z-myDataprev.z)<-5.0 &&(myData.x-myDataprev.x)<-0.5)
+	  {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);//
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
 
+	  }
+	  else if((myData.z-myDataprev.z)>=5.0 &&(myData.y-myDataprev.y)>=0.5)
+	  {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
 
-  	   for(int i = 0; i < 35; i++)
-  	   {
-  		  HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  		  Buff[0] = 0x1C;
-  		   Buff[1] = dataSong[i];
-  		   HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  		  Buff[0] = 0x1E;
-  		   Buff[1] = 0b11000000;
-  		   HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  		   HAL_Delay(500);
-  		   Buff[0] = 0x1E;
-  		    Buff[1] = 0b00000000;
-  		    HAL_I2C_Master_Transmit(&hi2c1,0x94,Buff,2,10);
-  	  	   HAL_Delay(50);
-  	   }
-	  	   HAL_Delay(3000);
+	  }
+	  else if ((myData.z-myDataprev.z)<-5.0 &&(myData.y-myDataprev.y)<-0.5)
+	  {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);//
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
+
+	  }
+	  else if ((myData.z-myDataprev.z)>=5.0 && (myData.y-myDataprev.y)>=5.0 && (myData.x-myDataprev.x)>=5.0)
+
+	  {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 0);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 0);
+	  }
+	  else if ((myData.z-myDataprev.z)<5.0 && (myData.z-myDataprev.z)>-5.0)
+	  {
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_15, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_14, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_13, 1);
+		  HAL_GPIO_WritePin(GPIOD, GPIO_PIN_12, 1);
+	  }
+	  myDataprev = myData;
 
     /* USER CODE END WHILE */
 
@@ -275,86 +231,40 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief I2C1 Initialization Function
+  * @brief SPI1 Initialization Function
   * @param None
   * @retval None
   */
-static void MX_I2C1_Init(void)
+static void MX_SPI1_Init(void)
 {
 
-  /* USER CODE BEGIN I2C1_Init 0 */
+  /* USER CODE BEGIN SPI1_Init 0 */
 
-  /* USER CODE END I2C1_Init 0 */
+  /* USER CODE END SPI1_Init 0 */
 
-  /* USER CODE BEGIN I2C1_Init 1 */
+  /* USER CODE BEGIN SPI1_Init 1 */
 
-  /* USER CODE END I2C1_Init 1 */
-  hi2c1.Instance = I2C1;
-  hi2c1.Init.ClockSpeed = 100000;
-  hi2c1.Init.DutyCycle = I2C_DUTYCYCLE_2;
-  hi2c1.Init.OwnAddress1 = 0;
-  hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
-  hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
-  hi2c1.Init.OwnAddress2 = 0;
-  hi2c1.Init.GeneralCallMode = I2C_GENERALCALL_DISABLE;
-  hi2c1.Init.NoStretchMode = I2C_NOSTRETCH_DISABLE;
-  if (HAL_I2C_Init(&hi2c1) != HAL_OK)
+  /* USER CODE END SPI1_Init 1 */
+  /* SPI1 parameter configuration*/
+  hspi1.Instance = SPI1;
+  hspi1.Init.Mode = SPI_MODE_MASTER;
+  hspi1.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi1.Init.DataSize = SPI_DATASIZE_8BIT;
+  hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
+  hspi1.Init.NSS = SPI_NSS_SOFT;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
+  hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
+  hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
+  hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
+  hspi1.Init.CRCPolynomial = 10;
+  if (HAL_SPI_Init(&hspi1) != HAL_OK)
   {
     Error_Handler();
   }
-  /* USER CODE BEGIN I2C1_Init 2 */
+  /* USER CODE BEGIN SPI1_Init 2 */
 
-  /* USER CODE END I2C1_Init 2 */
-
-}
-
-/**
-  * @brief I2S3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_I2S3_Init(void)
-{
-
-  /* USER CODE BEGIN I2S3_Init 0 */
-
-  /* USER CODE END I2S3_Init 0 */
-
-  /* USER CODE BEGIN I2S3_Init 1 */
-
-  /* USER CODE END I2S3_Init 1 */
-  hi2s3.Instance = SPI3;
-  hi2s3.Init.Mode = I2S_MODE_MASTER_TX;
-  hi2s3.Init.Standard = I2S_STANDARD_PHILIPS;
-  hi2s3.Init.DataFormat = I2S_DATAFORMAT_16B;
-  hi2s3.Init.MCLKOutput = I2S_MCLKOUTPUT_ENABLE;
-  hi2s3.Init.AudioFreq = I2S_AUDIOFREQ_48K;
-  hi2s3.Init.CPOL = I2S_CPOL_LOW;
-  hi2s3.Init.ClockSource = I2S_CLOCK_PLL;
-  hi2s3.Init.FullDuplexMode = I2S_FULLDUPLEXMODE_DISABLE;
-  if (HAL_I2S_Init(&hi2s3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN I2S3_Init 2 */
-
-  /* USER CODE END I2S3_Init 2 */
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
-static void MX_DMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_DMA1_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* DMA1_Stream5_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 0, 0);
-  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* USER CODE END SPI1_Init 2 */
 
 }
 
@@ -409,19 +319,13 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF5_SPI2;
   HAL_GPIO_Init(PDM_OUT_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : B1_Pin */
-  GPIO_InitStruct.Pin = B1_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pins : SPI1_SCK_Pin SPI1_MISO_Pin SPI1_MOSI_Pin */
-  GPIO_InitStruct.Pin = SPI1_SCK_Pin|SPI1_MISO_Pin|SPI1_MOSI_Pin;
+  /*Configure GPIO pin : I2S3_WS_Pin */
+  GPIO_InitStruct.Pin = I2S3_WS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF5_SPI1;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+  GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+  HAL_GPIO_Init(I2S3_WS_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : BOOT1_Pin */
   GPIO_InitStruct.Pin = BOOT1_Pin;
@@ -446,6 +350,14 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
+  /*Configure GPIO pins : I2S3_MCK_Pin I2S3_SCK_Pin I2S3_SD_Pin */
+  GPIO_InitStruct.Pin = I2S3_MCK_Pin|I2S3_SCK_Pin|I2S3_SD_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF6_SPI3;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
   /*Configure GPIO pin : VBUS_FS_Pin */
   GPIO_InitStruct.Pin = VBUS_FS_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
@@ -466,11 +378,23 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(OTG_FS_OverCurrent_GPIO_Port, &GPIO_InitStruct);
 
-  /*Configure GPIO pin : MEMS_INT2_Pin */
-  GPIO_InitStruct.Pin = MEMS_INT2_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_EVT_RISING;
+  /*Configure GPIO pins : Audio_SCL_Pin Audio_SDA_Pin */
+  GPIO_InitStruct.Pin = Audio_SCL_Pin|Audio_SDA_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_OD;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  HAL_GPIO_Init(MEMS_INT2_GPIO_Port, &GPIO_InitStruct);
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF4_I2C1;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : PE0 */
+  GPIO_InitStruct.Pin = GPIO_PIN_0;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING_FALLING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI0_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
 /* USER CODE BEGIN MX_GPIO_Init_2 */
 /* USER CODE END MX_GPIO_Init_2 */
